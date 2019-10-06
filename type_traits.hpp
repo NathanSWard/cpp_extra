@@ -68,4 +68,8 @@ struct has_type : std::disjunction<std::is_same<T, Us>...> {};
 template<class T, class... Us>
 inline static constexpr bool has_type_v = has_type<T, Us...>::value;
 
+// always_false - template class for always false static asserts
+template<class... Ts>
+struct always_false : std::false_type {};
+
 }

@@ -1,5 +1,7 @@
 // functional.hpp
 
+#include "type_traits.hpp"
+
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -7,8 +9,9 @@
 
 namespace extra {
 
+// c++20's bind_front()
 template<class Fn, class TupleArgs, std::size_t... Is, class... Args>
-auto _bind_front_invoke(Fn&& fn, TupleArgs&& tup, std::index_sequence<Is...>, Args&&... args) 
+constexpr auto _bind_front_invoke(Fn&& fn, TupleArgs&& tup, std::index_sequence<Is...>, Args&&... args) 
 noexcept(noexcept(std::invoke(std::forward<Fn>(fn), 
                     std::get<Is>(std::forward<TupleArgs>(tup))..., 
                     std::forward<Args>(args)...))) 
@@ -22,10 +25,14 @@ noexcept(noexcept(std::invoke(std::forward<Fn>(fn),
 
 template<class Fn, class... BoundArgs>
 struct _bind_front_impl {  
-    static_assert(std::is_constructible_v<std::decay_t<Fn>, Fn>, "");
-    static_assert(std::is_move_constructible_v<std::decay_t<Fn>>, "");
-    static_assert(std::conjunction_v<std::is_constructible<std::decay_t<BoundArgs>, BoundArgs>...>, "");
-    static_assert(std::conjunction_v<std::is_move_constructible<std::decay_t<BoundArgs>>...>, "");
+    static_assert(std::is_constructible_v<std::decay_t<Fn>, Fn>, 
+        "bind_front requires a constructible decayed callable");
+    static_assert(std::is_move_constructible_v<std::decay_t<Fn>>, 
+        "bind_front requires a move constructible decayed callable");
+    static_assert(std::conjunction_v<std::is_constructible<std::decay_t<BoundArgs>, BoundArgs>...>, 
+        "bind_front requires constructible bound arguments");
+    static_assert(std::conjunction_v<std::is_move_constructible<std::decay_t<BoundArgs>>...>, 
+        "bind_ront requires move constructible bound arguments");
    
     using Seq = std::index_sequence_for<BoundArgs...>;
 
@@ -71,8 +78,66 @@ struct _bind_front_impl {
 };
 
 template<class Fn, class... BoundArgs>
-[[nodiscard]] auto bind_front(Fn&& fn, BoundArgs&&... bound_args) {  
+[[nodiscard]] constexpr auto bind_front(Fn&& fn, BoundArgs&&... bound_args) {  
     return _bind_front_impl<Fn, BoundArgs...>{std::forward<Fn>(fn), std::forward<BoundArgs>(bound_args)...};
 }
 
+// curry - bind a single argument at a time to a function and return a new function
+template<class Fn>
+class _curry_impl {  
+    
+    Fn fn_;
+
+public: 
+    constexpr explicit _curry_impl(Fn&& fn) noexcept(noexcept(Fn(std::forward<Fn>(fn)))) 
+        : fn_(std::forward<Fn>(fn)) 
+    {}
+
+    // bind another argument
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    & noexcept(noexcept(_curry_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
+    {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))})) {
+        return _curry_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))};  
+    }
+    
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg)
+    const& noexcept(noexcept(_curry_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
+    {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))})) {
+        return _curry_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))};  
+    }
+    
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg)
+    && noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    }
+    
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    const&& noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    }
+
+    // TODO maybe : add ref qualifier overloads?
+    // invoke the held callable 
+    [[nodiscard]] constexpr decltype(auto) operator()() noexcept(noexcept(fn_())) {
+        static_assert(std::is_invocable_v<Fn>, "not all curry arguments bound"); 
+        return fn_(); 
+    } 
+};
+
+template<class Fn>
+[[nodiscard]] constexpr auto curry(Fn&& fn) {
+    return _curry_impl<Fn>{std::forward<Fn>(fn)}; 
 }
+
+}
+
