@@ -134,9 +134,24 @@ public:
     } 
 };
 
+// compose - compose a variadic number of functions ( e.g. compose(a, b, c)(1) == a(b(c(1))) )
 template<class Fn>
-[[nodiscard]] constexpr auto curry(Fn&& fn) {
-    return _curry_impl<Fn>{std::forward<Fn>(fn)}; 
+constexpr auto compose(Fn&& fn) {
+    return [fn = std::forward<Fn>(fn)] (auto&&... xs) -> decltype(auto) { 
+        return fn(xs...); 
+    };
+}
+
+template<class FnA, class FnB>
+constexpr auto compose(FnA&& a, FnB&& b) {
+    return [a = std::forward<FnA>(a), b = std::forward<FnB>(b)] (auto&&... xs) -> decltype(auto) {
+        return a(b(xs...));
+    };
+}
+
+template<class FnA, class FnB, class FnC, class... Fns>
+constexpr auto compose(FnA&& a, FnB&& b, FnC&& c, Fns&&... fns) {
+    return compose(std::forward<FnA>(a), compose(std::forward<FnB>(b), std::forward<FnC>(c), std::forward<Fns>(fns)...));
 }
 
 }
