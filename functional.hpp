@@ -89,8 +89,12 @@ template<class Fn, class... BoundArgs>
 //       auto fn = extra::curry_lazy(add)(1)(2);
 //       assert(fn() == 3);
 //
+template<class Fn, bool is_invocable>
+class _curry_lazy_impl;
+
+// specialization for when arguments can be bound
 template<class Fn>
-class _curry_lazy_impl {   
+class _curry_lazy_impl<Fn, false> {   
     Fn fn_;
 
 public: 
@@ -98,50 +102,81 @@ public:
         : fn_(std::forward<Fn>(fn)) 
     {}
 
-    // bind another argument
     template<class Arg>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    & noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
-    {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))})) {
-        return _curry_lazy_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
-            {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))};  
-    }
-    
-    template<class Arg>
-    [[nodiscard]] constexpr auto operator()(Arg&& arg)
-    const& noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
-    {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))})) {
-        return _curry_lazy_impl<decltype(bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg)))>
-            {bind_front(std::forward<Fn>(fn_), std::forward<Arg>(arg))};  
-    }
-    
-    template<class Arg>
-    [[nodiscard]] constexpr auto operator()(Arg&& arg)
-    && noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
-        return _curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
-    }
-    
-    template<class Arg>
-    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    const&& noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
-        return _curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    & noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))
+                        , std::is_invocable_v<decltype(bind_front(fn_, std::forward<Arg>(arg)))>>
+                        {bind_front(fn_, std::forward<Arg>(arg))})) {
+        return _curry_lazy_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))
+                , std::is_invocable_v<decltype(bind_front(fn_, std::forward<Arg>(arg)))>>
+                {bind_front(fn_, std::forward<Arg>(arg))};  
     }
 
-    // TODO maybe : add ref qualifier overloads?
-    // invoke the held callable 
-    [[nodiscard]] constexpr decltype(auto) operator()() noexcept(noexcept(fn_())) {
-        static_assert(std::is_invocable_v<Fn>, "not all curry_lazy arguments bound"); 
-        return fn_(); 
-    } 
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    const& noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))
+                            , std::is_invocable_v<decltype(bind_front(fn_, std::forward<Arg>(arg)))>>
+                            {bind_front(fn_, std::forward<Arg>(arg))})) {
+        return _curry_lazy_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))
+                , std::is_invocable_v<decltype(bind_front(fn_, std::forward<Arg>(arg)))>>
+                {bind_front(fn_, std::forward<Arg>(arg))};  
+    }
+    
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg)
+    && noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))
+                        , std::is_invocable_v<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>>
+                        {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
+        return _curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))
+                , std::is_invocable_v<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>>
+                {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    }
+    
+    template<class Arg>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    const&& noexcept(noexcept(_curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))
+                            , std::is_invocable_v<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>>
+                            {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
+        return _curry_lazy_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))
+                , std::is_invocable_v<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>>
+                {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    }
+};
+
+// specialization for when callable can be invoked
+template<class Fn>
+class _curry_lazy_impl<Fn, true> {   
+    Fn fn_;
+
+public:
+    constexpr explicit _curry_lazy_impl(Fn&& fn) noexcept(noexcept(Fn(std::forward<Fn>(fn)))) 
+        : fn_(std::forward<Fn>(fn)) 
+    {}
+
+    [[nodiscard]] constexpr auto operator()() 
+    & noexcept(noexcept(std::invoke(fn_))) -> decltype(std::invoke(fn_)) {
+        return std::invoke(fn_); 
+    }
+
+    [[nodiscard]] constexpr auto operator()() 
+    const& noexcept(noexcept(std::invoke(fn_))) -> decltype(std::invoke(fn_)) {
+        return std::invoke(fn_); 
+    }
+
+    [[nodiscard]] constexpr auto operator()() 
+    && noexcept(noexcept(std::invoke(std::move(fn_)))) -> decltype(std::invoke(std::move(fn_))) {
+        return std::invoke(std::move(fn_)); 
+    }
+
+    [[nodiscard]] constexpr auto operator()() 
+    const&& noexcept(noexcept(std::invoke(std::move(fn_)))) -> decltype(std::invoke(std::move(fn_))) {
+        return std::invoke(std::move(fn_)); 
+    }
 };
 
 template<class Fn>
 [[nodiscard]] constexpr auto curry_lazy(Fn&& fn) {
-    return _curry_lazy_impl<Fn>{std::forward<Fn>(fn)};
+    return _curry_lazy_impl<Fn, std::is_invocable_v<Fn>>{std::forward<Fn>(fn)};
 }
 
 // curry - bind a single argument at a time to a function and return a new function.
