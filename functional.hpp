@@ -160,56 +160,55 @@ public:
         : fn_(std::forward<Fn>(fn)) 
     {}
 
-    template<class Arg>
-    [[nodiscard]] constexpr decltype(auto) operator()(Arg&& arg) 
-    & noexcept(std::is_invocable_v<Fn, Arg> ? 
-                noexcept(std::invoke(fn_, std::forward<Arg>(arg))) :             
-                noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
-                    {bind_front(fn_, std::forward<Arg>(arg))})) {  
-        if constexpr (std::is_invocable_v<Fn, Arg>)
-            return std::invoke(fn_, std::forward<Arg>(arg));
-        else 
-            return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
-                {bind_front(fn_, std::forward<Arg>(arg))};  
+    // bind an argument to the callable
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) & {  
+        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
+            {bind_front(fn_, std::forward<Arg>(arg))};  
+    }
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) const& {  
+        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
+            {bind_front(fn_, std::forward<Arg>(arg))};  
+    }
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) && {  
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+    }
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) const&& {  
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
+            {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
     }
     
-    template<class Arg>
-    [[nodiscard]] constexpr decltype(auto) operator()(Arg&& arg)
-    const& noexcept(std::is_invocable_v<Fn, Arg> ? 
-                noexcept(std::invoke(fn_, std::forward<Arg>(arg))) :             
-                noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
-                    {bind_front(fn_, std::forward<Arg>(arg))})) {  
-        if constexpr (std::is_invocable_v<Fn, Arg>) 
-            return std::invoke(fn_, std::forward<Arg>(arg));                   
-        else                                                       
-            return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
-                {bind_front(fn_, std::forward<Arg>(arg))};  
+    // invoke the callable
+    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    & noexcept(noexcept(std::invoke(fn_, std::forward<Arg>(arg))))
+    -> decltype(std::invoke(fn_, std::forward<Arg>(arg))) {  
+        return std::invoke(fn_, std::forward<Arg>(arg));
     }
-    
-    template<class Arg>
-    [[nodiscard]] constexpr decltype(auto) operator()(Arg&& arg)
-    && noexcept(std::is_invocable_v<Fn, Arg> ? 
-                noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))) :             
-                noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-                    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
-        if constexpr (std::is_invocable_v<Fn, Arg>) 
-            return std::invoke(std::move(fn_), std::forward<Arg>(arg));             
-        else
-            return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-                {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+
+    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    const& noexcept(noexcept(std::invoke(fn_, std::forward<Arg>(arg))))
+    -> decltype(std::invoke(fn_, std::forward<Arg>(arg))) {   
+        return std::invoke(fn_, std::forward<Arg>(arg));
     }
-    
-    template<class Arg>
-    [[nodiscard]] constexpr decltype(auto) operator()(Arg&& arg) 
-    const&& noexcept(std::is_invocable_v<Fn, Arg> ? 
-                noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))) :             
-                noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-                    {bind_front(std::move(fn_), std::forward<Arg>(arg))})) {  
-        if constexpr (std::is_invocable_v<Fn, Arg>) 
-            return std::invoke(std::move(fn_), std::forward<Arg>(arg));             
-        else
-            return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
-                {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
+
+    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    && noexcept(noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))))
+    -> decltype(std::invoke(std::move(fn_), std::forward<Arg>(arg))) {  
+        return std::invoke(std::move(fn_), std::forward<Arg>(arg));
+    }
+
+    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    [[nodiscard]] constexpr auto operator()(Arg&& arg) 
+    const&& noexcept(noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))))
+    -> decltype(std::invoke(std::move(fn_), std::forward<Arg>(arg))) {  
+        return std::invoke(std::move(fn_), std::forward<Arg>(arg));
     }
 };
 
