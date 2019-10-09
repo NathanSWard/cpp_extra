@@ -255,15 +255,19 @@ template<class Fn>
 // compose - compose a variadic number of functions ( e.g. compose(a, b, c)(1) == a(b(c(1))) )
 template<class Fn>
 constexpr auto compose(Fn&& fn) {
-    return [fn = std::forward<Fn>(fn)] (auto&&... xs) -> decltype(auto) { 
-        return fn(xs...); 
+    return [fn = std::forward<Fn>(fn)] (auto&&... xs) mutable
+    noexcept(noexcept(std::invoke(std::forward<Fn>(fn), xs...))) 
+    -> decltype(std::invoke(std::forward<Fn>(fn), xs...)) { 
+        return std::invoke(std::forward<Fn>(fn), xs...); 
     };
 }
 
 template<class FnA, class FnB>
 constexpr auto compose(FnA&& a, FnB&& b) {
-    return [a = std::forward<FnA>(a), b = std::forward<FnB>(b)] (auto&&... xs) -> decltype(auto) {
-        return a(b(xs...));
+    return [a = std::forward<FnA>(a), b = std::forward<FnB>(b)] (auto&&... xs) mutable 
+    noexcept(noexcept(std::invoke(std::forward<FnA>(a), std::invoke(std::forward<FnB>(b), xs...))))
+    -> decltype(std::invoke(std::forward<FnA>(a), std::invoke(std::forward<FnB>(b), xs...))) {
+        return std::invoke(std::forward<FnA>(a), std::invoke(std::forward<FnB>(b), xs...));
     };
 }
 
