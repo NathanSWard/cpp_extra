@@ -2,11 +2,12 @@
 
 #pragma once
 
+#include <functional>
 #include <type_traits>
 
 namespace extra {
 
-// remove_cvref - removes both cv and ref qualifiers
+// C++20's remove_cvref - removes both cv and ref qualifiers
 template<class T>
 struct remove_cvref {
     using type = std::remove_cv_t<std::remove_reference_t<T>>;
@@ -15,7 +16,7 @@ struct remove_cvref {
 template<class T>
 using remove_cvref_t = typename remove_cvref<T>::type;
 
-// is_unbounded_array - checks if type is an unbounded array
+// C++20's is_unbounded_array - checks if type is an unbounded array
 template<class T>
 struct is_unbounded_array: std::false_type {};
 
@@ -24,6 +25,20 @@ struct is_unbounded_array<T[]> : std::true_type {};
 
 template< class T >
 inline constexpr bool is_unbounded_array_v = is_unbounded_array<T>::value;
+
+// remove_ref_wrap - remove a reference wrapper
+template<class T>
+struct remove_ref_wrap {
+    using type = T;
+};
+
+template<class T>
+struct remove_ref_wrap<std::reference_wrapper<T>> {
+    using type = T&;
+};
+
+template<class T>
+using remove_ref_wrap_t = typename remove_ref_wrap<T>::type;
 
 // contains - checks if a templated type contains a specific type
 template <class Haystack, class Needle>
