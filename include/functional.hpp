@@ -1,6 +1,5 @@
 // functional.hpp
 
-#include "_functional.hpp"
 #include "type_traits.hpp"
 
 #include <functional>
