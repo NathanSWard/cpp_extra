@@ -90,79 +90,75 @@ template<class Fn, class... BoundArgs>
 //       auto fn = extra::curry(add);
 //       assert(fn(1)(2) == 3);
 //
-template<class Fn, std::size_t I>
+template<class Fn>
 class _curry_impl {
-    Fn fn_;
+    std::decay_t<Fn> fn_;
 public: 
     constexpr explicit _curry_impl(Fn&& fn) 
-    noexcept(noexcept(Fn(std::forward<Fn>(fn)))) 
+    noexcept(noexcept(std::decay_t<Fn>(std::forward<Fn>(fn)))) 
         : fn_(std::forward<Fn>(fn)) 
     {}
 
     // bind an argument to the callable
-    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    & noexcept(noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1>
+    & noexcept(noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
             {bind_front(fn_, std::forward<Arg>(arg))})) 
-    -> _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1> {
-        static_assert(detail::is_next_arg_v<decltype(arg), I, Fn>, "curried argument is the wrong type");   
-        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1>
+    -> _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))> {
+        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
             {bind_front(fn_, std::forward<Arg>(arg))};  
     }
 
-    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    const& noexcept(noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1>
+    const& noexcept(noexcept(_curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
             {bind_front(fn_, std::forward<Arg>(arg))})) 
-    -> _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1> {
-        static_assert(detail::is_next_arg_v<decltype(arg), I, Fn>, "curried argument is the wrong type");
-        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg))), 1>
+    -> _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))> {
+        return _curry_impl<decltype(bind_front(fn_, std::forward<Arg>(arg)))>
             {bind_front(fn_, std::forward<Arg>(arg))};  
     }
 
-    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    && noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1>
+    && noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
             {bind_front(std::move(fn_), std::forward<Arg>(arg))})) 
-    -> _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1> {
-        static_assert(detail::is_next_arg_v<decltype(arg), I, Fn>, "curried argument is the wrong type");  
-        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1>
+    -> _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))> {
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
             {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
     }
 
-    template<class Arg, std::enable_if_t<!std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<!std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
-    const&& noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1>
+    const&& noexcept(noexcept(_curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
             {bind_front(std::move(fn_), std::forward<Arg>(arg))})) 
-    -> _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1> {
-        static_assert(detail::is_next_arg_v<decltype(arg), I, Fn>, "curried argument is the wrong type"); 
-        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg))), 1>
+    -> _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))> {
+        return _curry_impl<decltype(bind_front(std::move(fn_), std::forward<Arg>(arg)))>
             {bind_front(std::move(fn_), std::forward<Arg>(arg))};  
     }
     
     // invoke the callable
-    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
     & noexcept(noexcept(std::invoke(fn_, std::forward<Arg>(arg))))
     -> decltype(std::invoke(fn_, std::forward<Arg>(arg))) {  
         return std::invoke(fn_, std::forward<Arg>(arg));
     }
 
-    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
     const& noexcept(noexcept(std::invoke(fn_, std::forward<Arg>(arg))))
     -> decltype(std::invoke(fn_, std::forward<Arg>(arg))) {   
         return std::invoke(fn_, std::forward<Arg>(arg));
     }
 
-    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
     && noexcept(noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))))
     -> decltype(std::invoke(std::move(fn_), std::forward<Arg>(arg))) {  
         return std::invoke(std::move(fn_), std::forward<Arg>(arg));
     }
 
-    template<class Arg, std::enable_if_t<std::is_invocable_v<Fn, Arg>>* = nullptr>
+    template<class Arg, std::enable_if_t<std::is_invocable_v<std::decay_t<Fn>, Arg>>* = nullptr>
     [[nodiscard]] constexpr auto operator()(Arg&& arg) 
     const&& noexcept(noexcept(std::invoke(std::move(fn_), std::forward<Arg>(arg))))
     -> decltype(std::invoke(std::move(fn_), std::forward<Arg>(arg))) {  
@@ -172,7 +168,7 @@ public:
 
 template<class Fn>
 [[nodiscard]] constexpr auto curry(Fn&& fn) {
-    return _curry_impl<std::decay_t<Fn>, 0>{std::forward<std::decay_t<Fn>>(fn)};
+    return _curry_impl<Fn>{std::forward<Fn>(fn)};
 }
 
 // compose - compose a variadic number of functions ( e.g. compose(a, b, c)(1) == a(b(c(1))) )
