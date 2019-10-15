@@ -39,7 +39,7 @@ public:
 
     public:
         constexpr explicit iterator(iter_t iters)
-        noexcept(noexcept(iters_{std::move(iters)})) 
+        noexcept(noexcept(iter_t{std::move(iters)})) 
             : iters_{std::move(iters)} 
         {}
 
@@ -68,8 +68,8 @@ public:
     };
 
     constexpr explicit _zip_impl(Rs&&... ranges)
-    noexcept(noexcept(begin_{std::make_tuple(std::begin(ranges)...)}) 
-    && noexcept(end_{std::make_tuple(std::end(ranges)...)}))
+    noexcept(noexcept(iterator{std::make_tuple(std::begin(ranges)...)}) 
+    && noexcept(iterator{std::make_tuple(std::end(ranges)...)}))
         : begin_{std::make_tuple(std::begin(ranges)...)}
         , end_{std::make_tuple(std::end(ranges)...)} 
     {}
