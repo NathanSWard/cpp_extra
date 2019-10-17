@@ -18,7 +18,7 @@ TEST_CASE("zip", "[iterator]") {
         f = 3.14f;
     }
 
-    REQUIRE(vec == std::vector<int>{1, 1, 1});
+    REQUIRE(vec == std::vector<int>{0, 0, 0, 4});
     REQUIRE(arr == std::array<char, 3>{'a', 'a', 'a'});
     REQUIRE(lst == std::list<float>{3.14f, 3.14f, 3.14f});
 }
