@@ -343,7 +343,7 @@ template <typename... Rs>
 class _zip_impl {
 private:
     using iter_t = detail::iterator<Rs...>;
-    using sentinel_t = detail::iterator<Rs...>;
+    using sentinel_t = detail::sentinel<Rs...>;
 
 public:
     constexpr explicit _zip_impl(Rs&&... ranges)

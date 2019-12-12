@@ -29,6 +29,18 @@ Extensions to the c++ standard library that can help simplify code or provide ot
        * note: ranges much have `begin()` and `end()` functions
    * `czip()` `rzip()` `crzip()`
      * similiar to zip() except ranges must provide c/r/cr`begin()` and c/r/cr`end()` functions
+* `"string.hpp"`
+  * `class strtok`
+    * `strtok::strtok(Str&&, Tok&&)`
+      * Str (the string to be split)
+      * Tok (the tokens to split on)
+    * `std::string_view strtok::operator()`
+      * Return a view between a set of tokens
+      * Can be called multiple times, will return an empty view once the entire string is split
+      * e.g. `assert(strtok("hello world", " ")() == "hello");`
+  * `std::vector<std::string_view> strtok_all(std::string_view str, std::string_view tokens)`
+    * Similar to the `strtok` class, however, `str` is split all at once returning a vector of all split views.
+    * e.g. `assert(strtok_all("hello world", " ") == std::vector{"hello"sv, "world"sv});`
 * `"tuple.hpp"`
   * `void for_each(Fn&&, Tuple&&)`
     * Apply a function to each element in a tuple
