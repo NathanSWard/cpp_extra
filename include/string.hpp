@@ -9,15 +9,24 @@ namespace extra {
 
 class strtok {
 public:
-    template<class Str, class Tok>
-    constexpr explicit strtok(Str&& str, Tok&& tokens) noexcept 
-        : str_{std::forward<Str>(str)}
-        , tokens_{std::forward<Tok>(tokens)}
+    template<class... Args>
+    constexpr explicit strtok(Args&&... args) noexcept 
+        : str_{std::forward<Args>(args)...}
     {}
 
-    [[nodiscard]] constexpr std::string_view operator()() noexcept {
-        auto const begin = str_.find_first_not_of(tokens_);
-        auto const end = str_.find_first_of(tokens_, begin);
+    [[nodiscard]] constexpr std::string_view operator()(std::string_view const tokens) noexcept {
+        return tokenize(tokens);
+    }
+
+    [[nodiscard]] constexpr std::string_view operator()(std::string_view const& str, std::string_view const tokens) noexcept {
+        str_ = str;
+        return tokenize(tokens);
+    }
+
+private:
+    constexpr std::string_view tokenize(std::string_view const& tokens) noexcept {
+        auto const begin = str_.find_first_not_of(tokens);
+        auto const end = str_.find_first_of(tokens, begin);
 
         if (end != std::string_view::npos) {
             std::string_view const ret{str_.begin() + begin, end - begin};
@@ -33,9 +42,7 @@ public:
             return {};
     }
 
-private:
     std::string_view str_;
-    std::string_view const tokens_;
 };
 
 std::vector<std::string_view> strtok_all(std::string_view const str, std::string_view const tokens) noexcept {
