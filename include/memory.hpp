@@ -86,13 +86,13 @@ public:
     constexpr void reset(T* const ptr = nullptr) noexcept { ptr_ = ptr; }
     constexpr void swap(ptr& p) noexcept { std::swap(ptr_, p.ptr_); }
 
-    constexpr T* get() const noexcept { return ptr_; }
-    constexpr explicit operator bool() const noexcept { return ptr_ != nullptr; }
+    [[nodiscard]] constexpr T* get() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
-    constexpr T& operator*() const noexcept { return *ptr_; }
-    constexpr T* operator->() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr T& operator*() const noexcept { return *ptr_; }
+    [[nodiscard]] constexpr T* operator->() const noexcept { return ptr_; }
 
-    constexpr explicit operator T*() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr explicit operator T*() const noexcept { return ptr_; }
 
     friend constexpr bool operator==(ptr const& lhs, ptr const& rhs) noexcept {
         return lhs.ptr_ == rhs.ptr_;
@@ -197,13 +197,13 @@ public:
     
     constexpr void swap(non_null_ptr& p) noexcept { std::swap(ptr_, p.ptr_); }
 
-    constexpr T* get() const noexcept { return ptr_; }
-    constexpr operator bool() const noexcept { return true; }
+    [[nodiscard]] constexpr T* get() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr operator bool() const noexcept { return true; }
     
-    constexpr T& operator*() const noexcept { return *ptr_; }
-    constexpr T* operator->() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr T& operator*() const noexcept { return *ptr_; }
+    [[nodiscard]] constexpr T* operator->() const noexcept { return ptr_; }
 
-    constexpr explicit operator T*() const noexcept { return ptr_; }
+    [[nodiscard]] constexpr explicit operator T*() const noexcept { return ptr_; }
 
     friend constexpr bool operator==(non_null_ptr const& lhs, non_null_ptr const& rhs) noexcept {
         return lhs.ptr_ == rhs.ptr_;
