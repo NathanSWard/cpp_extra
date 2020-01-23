@@ -34,7 +34,7 @@ struct is_smart_ptr<Ptr, false> : std::false_type {};
 template<class Ptr>
 static constexpr bool is_smart_ptr_v = is_smart_ptr<Ptr>::value;
 
-}
+} // namespace detail
 
 template<class T>
 class ptr {
@@ -230,4 +230,62 @@ public:
     }
 };
 
+} // namespace extra
+
+namespace std {
+
+template<class T>
+struct hash<extra::ptr<T>> {
+    [[nodiscard]] constexpr std::size_t operator()(extra::ptr<T> const& p) const noexcept {
+        return hash<T*>{}(p.get());
+    }
+};
+
+template<class To, class From>
+[[nodiscard]] extra::ptr<To> static_pointer_cast(extra::ptr<From> p) noexcept {
+    return static_cast<To*>(p.get());
 }
+
+template<class To, class From>
+[[nodiscard]] extra::ptr<To> dynamic_pointer_cast(extra::ptr<From> p) noexcept {
+    return dynamic_cast<To*>(p.get());
+}
+
+template<class To, class From>
+[[nodiscard]] extra::ptr<To> const_pointer_cast(extra::ptr<From> p) noexcept {
+    return const_cast<To*>(p.get());
+}
+
+template<class To, class From>
+[[nodiscard]] extra::ptr<To> reinterpret_pointer_cast(extra::ptr<From> p) noexcept {
+    return reinterpret_cast<To*>(p.get());
+}
+
+template<class T>
+struct hash<extra::non_null_ptr<T>> {
+    [[nodiscard]] constexpr std::size_t operator()(extra::non_null_ptr<T> const& p) const noexcept {
+        return hash<T*>{}(p.get());
+    }
+};
+
+template<class To, class From>
+[[nodiscard]] extra::non_null_ptr<To> static_pointer_cast(extra::non_null_ptr<From> p) noexcept {
+    return static_cast<To*>(p.get());
+}
+
+template<class To, class From>
+[[nodiscard]] extra::non_null_ptr<To> dynamic_pointer_cast(extra::non_null_ptr<From> p) noexcept {
+    return dynamic_cast<To*>(p.get());
+}
+
+template<class To, class From>
+[[nodiscard]] extra::non_null_ptr<To> const_pointer_cast(extra::non_null_ptr<From> p) noexcept {
+    return const_cast<To*>(p.get());
+}
+
+template<class To, class From>
+[[nodiscard]] extra::non_null_ptr<To> reinterpret_pointer_cast(extra::non_null_ptr<From> p) noexcept {
+    return reinterpret_cast<To*>(p.get());
+}
+
+} // namespace std
